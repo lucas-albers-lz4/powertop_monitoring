@@ -9,7 +9,8 @@ BUILDKIT_COMPRESSION_LEVEL=9
 
 # Define version matrices
 GO_VERSIONS=("1.23")
-DEBIAN_VERSIONS=("bullseye" "bookworm")
+#not building bookworm until I decide to determine why it does not work
+DEBIAN_VERSIONS=("bullseye")
 
 # Enable BuildKit
 export DOCKER_BUILDKIT=1
