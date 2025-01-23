@@ -8,8 +8,8 @@ BUILDKIT_COMPRESSION=zstd:chunked
 BUILDKIT_COMPRESSION_LEVEL=9
 
 # Define version matrices
-GO_VERSIONS=("1.18" "1.23")
-DEBIAN_VERSIONS=("bullseye-slim" "bookworm-slim")
+GO_VERSIONS=("1.23")
+DEBIAN_VERSIONS=("bullseye" "bookworm")
 
 # Enable BuildKit
 export DOCKER_BUILDKIT=1
@@ -33,7 +33,7 @@ for GO_VERSION in "${GO_VERSIONS[@]}"; do
             --push .
         
         # If this is the latest Go version and Debian version, tag as latest
-        if [[ "$GO_VERSION" == "1.23" && "$DEBIAN_VERSION" == "bookworm-slim" ]]; then
+        if [[ "$GO_VERSION" == "1.23" && "$DEBIAN_VERSION" == "bookworm" ]]; then
             docker buildx build \
                 --platform $PLATFORMS \
                 --build-arg GO_VERSION=${GO_VERSION} \
@@ -44,7 +44,7 @@ for GO_VERSION in "${GO_VERSIONS[@]}"; do
                 --push .
         fi
         # If this is the latest Go version and Debian version, tag as latest
-        if [[ "$GO_VERSION" == "1.23" && "$DEBIAN_VERSION" == "bullseye-slim" ]]; then
+        if [[ "$GO_VERSION" == "1.23" && "$DEBIAN_VERSION" == "bullseye" ]]; then
             docker buildx build \
                 --platform $PLATFORMS \
                 --build-arg GO_VERSION=${GO_VERSION} \

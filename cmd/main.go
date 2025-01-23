@@ -7,15 +7,17 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
+	"net/http"
+
+	"github.com/project-flotta/powertop_container/pkg/collectors"
 	"github.com/project-flotta/powertop_container/pkg/stats"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
-	//"log"
-	"net/http"
 )
 
 var (
@@ -29,107 +31,81 @@ var (
 		"/metrics",
 		"metrics path",
 	)
-	sysInfo stats.SysInfo
+	enableComparison = flag.Bool(
+		"enable-comparison",
+		false,
+		"Enable both powertop and RPI metrics on Raspberry Pi systems",
+	)
+	sysInfo       stats.SysInfo
 	data          [][]string
 	baseLinePower float64
 	tunNum        uint32
 )
 
-func main() {
+func isRaspberryPi() bool {
+	if _, err := exec.LookPath("vcgencmd"); err == nil {
+		if data, err := os.ReadFile("/proc/device-tree/model"); err == nil {
+			return strings.Contains(strings.ToLower(string(data)), "raspberry pi")
+		}
+	}
+	return false
+}
 
+func main() {
 	flag.Parse()
 
-	//register the collector
-	err := prometheus.Register(version.NewCollector("powertop_tunable_exporter"))
+	isRPi := isRaspberryPi()
+	log.Printf("System is Raspberry Pi: %v", isRPi)
+
+	//register the version collector
+	err := prometheus.Register(version.NewCollector("power_metrics_exporter"))
 	if err != nil {
-		log.Fatalf(
-			"failed to register : %v",
-			err,
-		)
+		log.Fatalf("failed to register version collector: %v", err)
 	}
 
-	if err != nil {
-		log.Fatalf(
-			"failed to create collector: %v",
-			err,
-		)
+	// Always register RPI collector if on Raspberry Pi
+	if isRPi {
+		rpiCollector, err := collectors.NewRPiPowerCollector()
+		if err != nil {
+			log.Fatalf("failed to create RPI collector: %v", err)
+		}
+		err = prometheus.Register(rpiCollector)
+		if err != nil {
+			log.Fatalf("failed to register RPI collector: %v", err)
+		}
+		log.Printf("Registered RPI power metrics (prefix: rpi_)")
 	}
 
-	//prometheus http handler
-	go func() {
-		http.Handle(
-			*metricsPath,
-			promhttp.Handler(),
+	// Register powertop collector if appropriate
+	if !isRPi || (isRPi && *enableComparison) {
+		// Original powertop metrics with renamed metrics for comparison
+		ptTuCount := promauto.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "powertop_tunables_count",
+				Help: "counts the number of tuning available by powertop",
+			},
 		)
-		http.HandleFunc(
-			"/",
-			func(w http.ResponseWriter, r *http.Request) {
-				_, err = w.Write(
-					[]byte(`<html>}
-	fmt.Println("exporter call over")
-}
-			<head><title>PowerTop Tunable Exporter</title></head>
-			<body>
-			<h1>Tunable Exporter</h1>
-			<p><a href="` + *metricsPath + `">Metrics</a></p>
-			</body>
-			</html>`),
-				)
-				if err != nil {
-					log.Fatalf(
-						"failed to write response: %v",
-						err,
-					)
-				}
+		ptWakeupCount := promauto.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "powertop_wakeup_count",
+				Help: "counts the wake up calls per second available by powertop",
+			},
+		)
+		ptCpuUsageCount := promauto.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "powertop_cpu_usage_count",
+				Help: "counts the cpu usage in % by powertop",
+			},
+		)
+		ptBaselinePowerCount := promauto.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "powertop_baseline_power_count",
+				Help: "counts the baseline power used available by powertop",
 			},
 		)
 
-		err = http.ListenAndServe(
-			*address,
-			nil,
-		)
-		if err != nil {
-			log.Fatalf(
-				"failed to bind on %s: %v",
-				*address,
-				err,
-			)
-		}
-		fmt.Println("exporter call over")
-	}()
-
-	//Prometheus Metrics using Gauge
-	ptTuCount := promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "powertop_tunables_count",
-			Help: "counts the number of tuning available by powertop",
-		},
-	)
-
-	ptWakeupCount := promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "powertop_wakeup_count",
-			Help: "counts the wake up calls per second available by powertop",
-		},
-	)
-
-	ptCpuUsageCount := promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "powertop_cpu_usage_count",
-			Help: "counts the cpu usage in % by powertop",
-		},
-	)
-
-	ptBaselinePowerCount := promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "powertop_baseline_power_count",
-			Help: "counts the baseline power used available by powertop",
-		},
-	)
-
-	ticker := time.NewTicker(2 * time.Second)
-	done := make(chan bool)
-	for {
+		ticker := time.NewTicker(2 * time.Second)
+		done := make(chan bool)
 		go powerTopStart(
 			done,
 			ticker,
@@ -138,10 +114,59 @@ func main() {
 			ptBaselinePowerCount,
 			ptTuCount,
 		)
-		time.Sleep(2 * time.Second)
-		done <- true
+		log.Printf("Registered powertop metrics (prefix: powertop_)")
 	}
 
+	//prometheus http handler
+	http.Handle(
+		*metricsPath,
+		promhttp.Handler(),
+	)
+	http.HandleFunc(
+		"/",
+		func(w http.ResponseWriter, r *http.Request) {
+			systemInfo := "Standard System"
+			if isRPi {
+				systemInfo = "Raspberry Pi"
+				if *enableComparison {
+					systemInfo += " (with comparison metrics)"
+				}
+			}
+
+			_, err = w.Write(
+				[]byte(`<html>
+				<head><title>Power Metrics Exporter</title></head>
+				<body>
+				<h1>Power Metrics Exporter</h1>
+				<p>System Type: ` + systemInfo + `</p>
+				<p><a href="` + *metricsPath + `">Metrics</a></p>
+				<h2>Available Metrics:</h2>
+				<ul>` +
+					func() string {
+						var metrics string
+						if isRPi {
+							metrics += "<li>RPI metrics (rpi_*)</li>"
+						}
+						if !isRPi || *enableComparison {
+							metrics += "<li>Powertop metrics (powertop_*)</li>"
+						}
+						return metrics
+					}() +
+					`</ul>
+				</body>
+				</html>`),
+			)
+			if err != nil {
+				log.Fatalf("failed to write response: %v", err)
+			}
+		},
+	)
+
+	log.Printf("Starting power metrics exporter on %s", *address)
+	err = http.ListenAndServe(*address, nil)
+	if err != nil {
+		log.Fatalf("failed to bind on %s: %v", *address, err)
+	}
 }
 
 func powerTopStart(done chan bool, ticker *time.Ticker, ptWakeupCount prometheus.Gauge, ptCpuUsageCount prometheus.Gauge, ptBaselinePowerCount prometheus.Gauge, ptTuCount prometheus.Gauge) {

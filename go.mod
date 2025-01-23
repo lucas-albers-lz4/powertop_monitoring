@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/containers/podman/v3 v3.4.7
-	github.com/prometheus/client_golang v1.12.2
+	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/common v0.37.0
 )
 
