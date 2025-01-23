@@ -55,4 +55,36 @@ The final setup should look like this:
 Viewing powertop_baseline_power variation.
 
 NOTE:  
+On amd64 systems we provide results from vcgencmd : 
+```
+power_metrics_exporter_build_info A metric with a constant '1' value labeled by version, revision, branch, goversion from which power_metrics_exporter was built, and the goos and goarch for the build.
+ powertop_baseline_power_count counts the baseline power used available by powertop
+ powertop_cpu_usage_count counts the cpu usage in % by powertop
+ powertop_tunables_count counts the number of tuning available by powertop
+ powertop_wakeup_count counts the wake up calls per second available by powertop
+ process_cpu_seconds_total Total user and system CPU time spent in seconds.
+ process_max_fds Maximum number of open file descriptors.
+ process_open_fds Number of open file descriptors.
+ process_resident_memory_bytes Resident memory size in bytes.
+ process_start_time_seconds Start time of the process since unix epoch in seconds.
+ process_virtual_memory_bytes Virtual memory size in bytes.
+ process_virtual_memory_max_bytes Maximum amount of virtual memory available in bytes.
+ promhttp_metric_handler_requests_in_flight Current number of scrapes being served.
+ promhttp_metric_handler_requests_total Total number of scrapes by HTTP status code.
+```
+On arm64 systems we provide these results from powertop:
+```
+ rpi_clock_frequency_hz Clock frequencies for different components
+ rpi_cpu_frequency_mhz CPU frequency in MHz
+ rpi_cpu_temperature_celsius CPU temperature in Celsius
+ rpi_memory_split_mb Memory split between ARM and GPU in MB
+ rpi_power_kilowatts Current power usage in kilowatts
+ rpi_power_kwh_per_day Estimated kilowatt hours per day
+ rpi_power_kwh_per_month Estimated kilowatt hours per month
+ rpi_power_state Power state indicators (1 for true, 0 for false)
+ rpi_power_watts Current power usage in watts
+ rpi_voltage_core Core voltage in volts
+ rpi_voltage_sdram SDRAM voltage readings
+```
+ 
 Use the stable tag from Docker Hub; it is the bullseye version. For some reason, bookworm is not getting the correct metrics.
