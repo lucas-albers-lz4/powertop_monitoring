@@ -32,6 +32,7 @@ ARG TARGETOS
 
 # Build without using vendor directory  e
 #we are stripping the binary to reduce the size
+
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -mod=mod -v -o main -ldflags="-s -w" ./cmd/
 
 FROM debian:${DEBIAN_VERSION}-slim
