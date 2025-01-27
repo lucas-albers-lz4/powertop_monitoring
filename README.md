@@ -25,7 +25,7 @@ Open up a terminal.
 3. Run using the Go compiler <code>sudo go run cmd/main.go</code>.  
    PowerTop requires sudo permission to access the system stats.
 
-4. Bare Prometheus metrics can be seen using <code>curl 0.0.0.0:8887/metrics</code>.
+4. Bare Prometheus metrics can be seen using <code>curl --silent 0.0.0.0:8887/metrics |egrep 'powertop|rpi'</code>.
 
 <h3>Running Using Docker</h3>
 
@@ -87,4 +87,4 @@ On arm64 systems we provide these results from powertop:
  rpi_voltage_sdram SDRAM voltage readings
 ```
  
-Use the stable tag from Docker Hub; it is the bullseye version. For some reason, bookworm is not getting the correct metrics.
+Use the stable tag from Docker Hub; it is the bullseye version.
