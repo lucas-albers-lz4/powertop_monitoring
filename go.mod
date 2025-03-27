@@ -1,6 +1,6 @@
 module github.com/project-flotta/powertop_container
 
-go 1.17
+go 1.24
 
 require (
 	github.com/containers/podman/v3 v3.4.7

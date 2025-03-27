@@ -1,5 +1,5 @@
 # First, declare ARGs before any FROM statement
-ARG GO_VERSION=1.23
+ARG GO_VERSION=1.24
 ARG DEBIAN_VERSION=bullseye
 
 # Then use them in FROM statements

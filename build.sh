@@ -8,7 +8,7 @@ BUILDKIT_COMPRESSION=zstd:chunked
 BUILDKIT_COMPRESSION_LEVEL=9
 
 # Define version matrices
-GO_VERSIONS=("1.23")
+GO_VERSIONS=("1.24")
 #not building bookworm until I decide to determine why it does not work
 DEBIAN_VERSIONS=("bullseye")
 
@@ -34,7 +34,7 @@ for GO_VERSION in "${GO_VERSIONS[@]}"; do
             --push .
         
         # If this is the latest Go version and Debian version, tag as latest
-        if [[ "$GO_VERSION" == "1.23" && "$DEBIAN_VERSION" == "bookworm" ]]; then
+        if [[ "$GO_VERSION" == "1.24" && "$DEBIAN_VERSION" == "bookworm" ]]; then
             docker buildx build \
                 --platform $PLATFORMS \
                 --build-arg GO_VERSION=${GO_VERSION} \
@@ -45,7 +45,7 @@ for GO_VERSION in "${GO_VERSIONS[@]}"; do
                 --push .
         fi
         # If this is the latest Go version and Debian version, tag as latest
-        if [[ "$GO_VERSION" == "1.23" && "$DEBIAN_VERSION" == "bullseye" ]]; then
+        if [[ "$GO_VERSION" == "1.24" && "$DEBIAN_VERSION" == "bullseye" ]]; then
             docker buildx build \
                 --platform $PLATFORMS \
                 --build-arg GO_VERSION=${GO_VERSION} \
