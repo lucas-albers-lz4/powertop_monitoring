@@ -8,7 +8,7 @@ BUILDKIT_COMPRESSION=zstd:chunked
 BUILDKIT_COMPRESSION_LEVEL=9
 
 # Define version matrices
-GO_VERSIONS=("1.23")
+GO_VERSIONS=("1.24")
 #not building bookworm until I decide to determine why it does not work
 DEBIAN_VERSIONS=("bullseye")
 
